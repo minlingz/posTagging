@@ -19,9 +19,10 @@ def train(tagged_sentences: List[List[Tuple[str, str]]]):
 
     """
     pi = np.zeros(len(tag_tokens))
-    A = np.ones((len(tag_tokens), len(tag_tokens)))
-    B = np.ones((len(tag_tokens), len(word_tokens)))
+    A = np.ones((len(tag_tokens), len(tag_tokens)))  # add-one smoothing
+    B = np.ones((len(tag_tokens), len(word_tokens)))  # add-one smoothing
 
+    # count pi, A, B
     for sentence in tagged_sentences:
         pi[tag_tokens.index(sentence[0][1])] += 1
         for i in range(len(sentence) - 1):
@@ -31,6 +32,8 @@ def train(tagged_sentences: List[List[Tuple[str, str]]]):
                     tag_tokens.index(sentence[i][1]),
                     tag_tokens.index(sentence[i + 1][1]),
                 ] += 1
+
+    # normalize pi, A, B
     pi /= pi.sum()
     A /= A.sum(axis=1, keepdims=True)
     B /= B.sum(axis=1, keepdims=True)
@@ -45,13 +48,14 @@ train_tagset = nltk.corpus.brown.tagged_sents(tagset="universal")[:10000]
 word_tokens = list(set([word for sentence in sentences for word in sentence]))
 word_tokens.append("UNK")
 tag_tokens = list(set([tag for tagset in train_tagset for _, tag in tagset]))
-print(tag_tokens)
+print("tags:", tag_tokens)
 
 # train training set
 pi, A, B = train(train_tagset)
 
 # predict test set using viterbi and compare agasint the actual tags
 test_tagset = nltk.corpus.brown.tagged_sents(tagset="universal")[10150:10153]
+
 for test in test_tagset:
     obs = []
     s = []
@@ -61,7 +65,7 @@ for test in test_tagset:
             obs.append(word_tokens.index(word[0]))
         else:
             obs.append(word_tokens.index("UNK"))
-    print(obs)
-    print(s)
+
+    print("predicted tags:", s)
     qs, ps = viterbi(obs, pi, A, B)
-    print(qs)
+    print("actual tags   :", qs)
